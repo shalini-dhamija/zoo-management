@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ZooManagement.Enums;
-using ZooManagement.Models;
+using ZooManagement.Models.Data;
+using ZooManagement.Models.Requests;
 
 namespace ZooManagement;
 
@@ -21,6 +22,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             Name = "lion",
             Classification = Classification.Mammal
         };
+
         modelBuilder.Entity<Species>().HasData(lion);
 
         var simba = new Animal
@@ -29,8 +31,8 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             Name = "simba",
             SpeciesId = -1,
             Sex = Sex.Male,
-            DateOfBirth = new DateOnly(1997, 10, 16),
-            DateOfAcquisition = new DateOnly(2000, 1, 1),
+            DateOfBirth = new DateTime(2000, 1, 1).ToUniversalTime(),
+            DateOfAcquisition = new DateTime(2000, 1, 1).ToUniversalTime(),
         };
 
         var nala = new Animal{
@@ -38,10 +40,9 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             Name = "nala",
             SpeciesId = -1,
             Sex = Sex.Female,
-            DateOfBirth = new DateOnly(1997, 9, 10),
-            DateOfAcquisition = new DateOnly(2001, 2, 3),
+            DateOfBirth = new DateTime(1997, 9, 10).ToUniversalTime(),
+            DateOfAcquisition = new DateTime(2001, 2, 3).ToUniversalTime(),
         };
-        
         modelBuilder.Entity<Animal>().HasData(simba, nala);
     }
 }
