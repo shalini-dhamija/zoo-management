@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Writers;
 using ZooManagement.Models.Data;
 using ZooManagement.Models.Requests;
 using ZooManagement.Models.Response;
+using ZooManagement.Enums;
 
 namespace ZooManagement.Controllers;
 
@@ -36,6 +36,65 @@ public class AnimalsController: ControllerBase
             DateOfBirth = matchingAnimal.DateOfBirth,
             DateOfAcquisition = matchingAnimal.DateOfAcquisition, 
         });
+    }
+    [HttpGet("list/species")]
+    public IActionResult ListSpecies()
+    {
+        var allSpecies =_zoo.Species.Select(species => species.Name).ToArray();
+        return Ok(allSpecies);
+    }
+
+    [HttpGet("listall")]
+    public IActionResult ListAll([FromQuery] string species ="", [FromQuery] string classification ="", [FromQuery] int pagesize = 10, [FromQuery] int pagenum = 1)
+    {   
+        var filteredData = _zoo.Animals.Include(animal => animal.Species).AsQueryable();
+        var clsClassification = (Classification)Enum.Parse(typeof(Classification), classification);
+        
+        if (!string.IsNullOrEmpty(species))
+        {
+            filteredData = filteredData.Where(animal => animal.Species.Name == species).AsQueryable();
+        }
+
+        if (!string.IsNullOrEmpty(classification))
+        {
+            filteredData = filteredData.Where(animal => animal.Species.Classification == clsClassification).AsQueryable();
+        }
+        
+        if(filteredData == null)
+        {
+            return NotFound();
+        }
+
+        filteredData = filteredData
+                        .OrderBy(animal => animal.Name);
+
+        var totalPages = (int)Math.Ceiling((double)filteredData.Count() / pagesize);  
+
+        if (pagenum >totalPages)
+        {
+            pagenum = totalPages;
+        }
+
+        var pagedData = filteredData
+                        .Skip((pagenum -1) * pagesize)
+                        .Take(pagesize)
+                        .ToList();            
+
+        var animalsResponse = new List<AnimalResponse>();
+        foreach(var animal in pagedData)
+        {
+            var animalResponse = new AnimalResponse()
+            {
+                Name = animal.Name,
+                SpeciesName = animal.Species.Name,
+                Classification = animal.Species.Classification.ToString(),
+                Sex = animal.Sex.ToString(),
+                DateOfBirth = animal.DateOfBirth,
+                DateOfAcquisition = animal.DateOfAcquisition, 
+            };
+            animalsResponse.Add(animalResponse);
+        }
+        return Ok(animalsResponse);
     }
 
     [HttpPost]
