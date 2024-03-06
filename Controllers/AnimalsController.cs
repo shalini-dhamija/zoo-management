@@ -46,9 +46,9 @@ public class AnimalsController: ControllerBase
 
     [HttpGet("listall")]
     public IActionResult ListAll([FromQuery] string species ="", [FromQuery] string classification ="", [FromQuery] int pagesize = 10, [FromQuery] int pagenum = 1)
-    {   
+    {     
+
         var filteredData = _zoo.Animals.Include(animal => animal.Species).AsQueryable();
-        var clsClassification = (Classification)Enum.Parse(typeof(Classification), classification);
         
         if (!string.IsNullOrEmpty(species))
         {
@@ -57,7 +57,7 @@ public class AnimalsController: ControllerBase
 
         if (!string.IsNullOrEmpty(classification))
         {
-            filteredData = filteredData.Where(animal => animal.Species.Classification == clsClassification).AsQueryable();
+            filteredData = filteredData.ToList().Where(animal => animal.Species.Classification.ToString() == classification).AsQueryable();
         }
         
         if(filteredData == null)
