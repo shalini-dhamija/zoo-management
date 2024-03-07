@@ -9,6 +9,7 @@ public class Zoo : DbContext
 {
     public DbSet<Animal> Animals {get; set;} = null!;
     public DbSet<Species> Species {get; set;} = null!;
+    public DbSet<Enclosure> Enclosures {get; set;} = null!;
 
 protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -16,34 +17,53 @@ protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     }
 protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        var lion = new Species 
-        {
-            Id = -1,
-            Name = "lion",
-            Classification = Classification.Mammal
-        };
+        // var lion = new Species 
+        // {
+        //     Id = -1,
+        //     Name = "lion",
+        //     Classification = Classification.Mammal
+        // };
 
-        modelBuilder.Entity<Species>().HasData(lion);
+        // modelBuilder.Entity<Species>().HasData(lion);
 
-        var simba = new Animal
-        {
-            Id = -1,
-            Name = "simba",
-            SpeciesId = -1,
-            Sex = Sex.Male,
-            DateOfBirth = new DateTime(2000, 1, 1).ToUniversalTime(),
-            DateOfAcquisition = new DateTime(2000, 1, 1).ToUniversalTime(),
-        };
+        // var simba = new Animal
+        // {
+        //     Id = -1,
+        //     Name = "simba",
+        //     SpeciesId = -1,
+        //     Sex = Sex.Male,
+        //     DateOfBirth = new DateTime(2000, 1, 1).ToUniversalTime(),
+        //     DateOfAcquisition = new DateTime(2000, 1, 1).ToUniversalTime(),
+        // };
 
-        var nala = new Animal{
-            Id = -2,
-            Name = "nala",
-            SpeciesId = -1,
-            Sex = Sex.Female,
-            DateOfBirth = new DateTime(1997, 9, 10).ToUniversalTime(),
-            DateOfAcquisition = new DateTime(2001, 2, 3).ToUniversalTime(),
+        // var nala = new Animal{
+        //     Id = -2,
+        //     Name = "nala",
+        //     SpeciesId = -1,
+        //     Sex = Sex.Female,
+        //     DateOfBirth = new DateTime(1997, 9, 10).ToUniversalTime(),
+        //     DateOfAcquisition = new DateTime(2001, 2, 3).ToUniversalTime(),
+        // };
+        // modelBuilder.Entity<Animal>().HasData(simba, nala);
+
+        var enclosures = new Dictionary<string, int>(){
+            {"Lion’s Enclosure", 10},
+            {"Aviary ", 50},
+            {"Reptile House", 40},
+            {"Giraffe Enclosure", 6},
+            {"Hippo Enclosure", 10}            
         };
-        modelBuilder.Entity<Animal>().HasData(simba, nala);
+        var enclosureId = 1;
+        foreach (var e in enclosures){
+            var newEnclosure = new Enclosure
+            {
+                EnclosureId = enclosureId,
+                Name = e.Key,
+                NumberOfAnimals = e.Value,
+            };
+            modelBuilder.Entity<Enclosure>().HasData(newEnclosure);
+            enclosureId++;
+        }
 
         var species = new Dictionary<string, Classification>(){
             {"elephant", Classification.Mammal},
@@ -59,7 +79,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
         foreach (var s in species){
             var newSpecies = new Species
             {
-                Id = speciesId,
+                SpeciesId = speciesId,
                 Name = s.Key,
                 Classification = s.Value,
             };
@@ -74,7 +94,12 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
         var arrSpeciesId = new[]
             {
-                -1, 1, 2, 3, 4, 5, 6, 7
+                1, 2, 3, 4, 5, 6, 7
+            };
+
+        var arrEnclosureIds = new[]
+            {
+                1, 2, 3, 4, 5
             };
         
         var values = Enum.GetValues(typeof(Sex));
@@ -82,12 +107,13 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
         var newAnimals = Enumerable.Range(1, 100).Select(index =>
             new Animal{
-                Id = index,
+                AnimalId = index,
                 Name = names[Random.Shared.Next(names.Length)],                
                 Sex = (Sex)values.GetValue(random.Next(values.Length)),
                 DateOfAcquisition = DateTime.Now.ToUniversalTime(),
                 DateOfBirth = DateTime.Now.ToUniversalTime(),
                 SpeciesId = arrSpeciesId[Random.Shared.Next(arrSpeciesId.Length)],
+                EnclosureId = arrEnclosureIds[Random.Shared.Next(arrEnclosureIds.Length)]
             }).ToArray();
 
         foreach (var animal in newAnimals)

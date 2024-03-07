@@ -4,6 +4,8 @@ using ZooManagement.Models.Data;
 using ZooManagement.Models.Requests;
 using ZooManagement.Models.Response;
 using ZooManagement.Enums;
+using Microsoft.VisualBasic;
+using System.Net;
 
 namespace ZooManagement.Controllers;
 
@@ -22,7 +24,8 @@ public class AnimalsController: ControllerBase
     {
         var matchingAnimal = _zoo.Animals
         .Include(animal => animal.Species)
-        .SingleOrDefault(animal => animal.Id == id);
+        .Include(animal => animal.Enclosure)
+        .SingleOrDefault(animal => animal.AnimalId == id);
         if (matchingAnimal == null)
         {
             return NotFound();
@@ -32,6 +35,7 @@ public class AnimalsController: ControllerBase
             Name = matchingAnimal.Name,
             SpeciesName = matchingAnimal.Species.Name,
             Classification = matchingAnimal.Species.Classification.ToString(),
+            EnclosureName = matchingAnimal.Enclosure.Name,
             Sex = matchingAnimal.Sex.ToString(),
             DateOfBirth = matchingAnimal.DateOfBirth,
             DateOfAcquisition = matchingAnimal.DateOfAcquisition, 
@@ -44,11 +48,18 @@ public class AnimalsController: ControllerBase
         return Ok(allSpecies);
     }
 
+    [HttpGet("list/enclosures")]
+    public IActionResult ListEnclosures()
+    {
+        var allEnclosures =_zoo.Enclosures.Include(e => e.Animals).ThenInclude(a=>a.Species).ToList();
+        return Ok(allEnclosures);
+    }
+
     [HttpGet("listall")]
     public IActionResult ListAll([FromQuery] string species ="", [FromQuery] string classification ="", [FromQuery] int pagesize = 10, [FromQuery] int pagenum = 1)
     {     
-
-        var filteredData = _zoo.Animals.Include(animal => animal.Species).AsQueryable();
+        
+        var filteredData = _zoo.Animals.Include(animal => animal.Species).Include(animal => animal.Enclosure).AsQueryable();
         
         if (!string.IsNullOrEmpty(species))
         {
@@ -57,7 +68,11 @@ public class AnimalsController: ControllerBase
 
         if (!string.IsNullOrEmpty(classification))
         {
-            filteredData = filteredData.ToList().Where(animal => animal.Species.Classification.ToString() == classification).AsQueryable();
+            if(!Enum.TryParse<Classification>(classification,ignoreCase:true,out var intClassification))
+            {
+                return Ok(new List<AnimalResponse>());
+            }
+            filteredData = filteredData.Where(animal => animal.Species.Classification == intClassification).AsQueryable();
         }
         
         if(filteredData == null)
@@ -88,6 +103,7 @@ public class AnimalsController: ControllerBase
                 Name = animal.Name,
                 SpeciesName = animal.Species.Name,
                 Classification = animal.Species.Classification.ToString(),
+                EnclosureName = animal.Enclosure.Name,
                 Sex = animal.Sex.ToString(),
                 DateOfBirth = animal.DateOfBirth,
                 DateOfAcquisition = animal.DateOfAcquisition, 
@@ -100,20 +116,34 @@ public class AnimalsController: ControllerBase
     [HttpPost]
     public IActionResult Add([FromBody] CreateAnimalRequest createAnimalRequest)
     {
-        if(_zoo.Species.Any(species => species.Id == createAnimalRequest.SpeciesId))
+        if(_zoo.Species.Any(species => species.SpeciesId == createAnimalRequest.SpeciesId) && _zoo.Enclosures.Any(enclosure => enclosure.EnclosureId == createAnimalRequest.EnclosureId))
         {
-            Console.WriteLine("creating new animal");
-            var newAnimal = _zoo.Animals.Add(new Animal
+            Console.WriteLine("<----------Test--------->");
+            var enclosure = _zoo.Enclosures.First(enclosure => enclosure.EnclosureId == createAnimalRequest.EnclosureId);
+            Console.WriteLine("<----------Found Enclosure--------->");
+            if(_zoo.Animals.Count(animal => animal.EnclosureId == enclosure.EnclosureId)+1 < enclosure.NumberOfAnimals)
             {
-                Name = createAnimalRequest.Name,
-                SpeciesId = createAnimalRequest.SpeciesId,
-                Sex = createAnimalRequest.Sex,
-                DateOfBirth = createAnimalRequest.DateOfBirth,
-                DateOfAcquisition = createAnimalRequest.DateOfAcquisition,
-            }).Entity;
-            _zoo.SaveChanges();
-            return Ok(newAnimal);  
-        } else
+                Console.WriteLine("creating new animal");
+                var newAnimal = _zoo.Animals.Add(new Animal
+                {
+                    Name = createAnimalRequest.Name,
+                    SpeciesId = createAnimalRequest.SpeciesId,
+                    EnclosureId = createAnimalRequest.EnclosureId,
+                    Sex = createAnimalRequest.Sex,
+                    DateOfBirth = createAnimalRequest.DateOfBirth,
+                    DateOfAcquisition = createAnimalRequest.DateOfAcquisition,
+                }).Entity;
+                _zoo.SaveChanges();
+                return Ok(newAnimal);  
+            }
+            else
+            {
+                var msg = $"Enclosure {enclosure.Name} cannot have more than {enclosure.NumberOfAnimals} animals.";
+                return Conflict(new {Message=msg});
+                //throw new HttpRequestException(msg,null,HttpStatusCode.Conflict);                
+            }
+        } 
+        else
         {
             return BadRequest();
         }
