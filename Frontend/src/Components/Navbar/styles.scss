@@ -1,0 +1,127 @@
+@import "../commonStyles/constants.scss";
+
+.overlay {
+  position: fixed;
+  display: none;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  z-index: 3;
+}
+
+.show {
+  display: block;
+}
+
+.header {
+  width: 100%;
+  top: 0;
+  left: 0;
+  background-color: transparent;
+}
+
+li {
+  list-style: none;
+}
+
+.navbar {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 4;
+  padding: 1.25rem 1.5rem;
+}
+
+.nav-menu {
+  position: fixed;
+  right: -100%;
+  top: 5rem;
+  background-color: black;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  text-align: center;
+  transition: 0.3s;
+  z-index: 10;
+  box-shadow: 0 0 20px white;
+  @include padding(0);
+  @include margin(0);
+}
+
+.nav-menu.active {
+  right: 0;
+}
+
+.nav-item {
+  margin: 2.5rem;
+}
+
+.hamburger {
+  display: block;
+  cursor: pointer;
+}
+.bar {
+  display: block;
+  width: 25px;
+  height: 3px;
+  margin: 5px auto;
+  -webkit-transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
+  background-color: white;
+}
+
+//hamburger icon to close icon
+.hamburger.active .bar:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.active .bar:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+.hamburger.active .bar:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+.nav-link {
+  @include text("heading");
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  color: #482ff7;
+}
+
+.nav-logo {
+  @include text("title");
+  color: #482ff7;
+}
+
+@include desktop {
+  .navbar:not(.collapsed) {
+    width: 100%;
+    background-color: black;
+    box-shadow: 0 0 5px white;
+
+    .hamburger {
+      display: none;
+    }
+    .nav-menu {
+      position: static;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      text-decoration: none;
+      width: auto;
+      box-shadow: none;
+    }
+    .nav-item {
+      margin: 0 0 0 2.5rem;
+    }
+  }
+}

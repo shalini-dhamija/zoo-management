@@ -51,51 +51,67 @@ public class AnimalsController: ControllerBase
     [HttpGet("list/enclosures")]
     public IActionResult ListEnclosures()
     {
-        var allEnclosures =_zoo.Enclosures.Include(e => e.Animals).ThenInclude(a=>a.Species).ToList();
-        return Ok(allEnclosures);
+        var allEnclosures =_zoo.Enclosures
+                            .Include(e => e.Animals)
+                            .ThenInclude(a=>a.Species)
+                            .ToList();
+        var enclosuresResponse = new EnclosuresResponse();
+        foreach(var enclosure in allEnclosures)
+        {
+            var e = new EnclosureResponse(){
+                Name = enclosure.Name,
+                NumberOfAnimals = enclosure.NumberOfAnimals,
+                CurrentAnimalNumber = enclosure.CurrentAnimalNumber
+            };
+            enclosuresResponse.Enclosures.Add(e);
+        }
+        return Ok(enclosuresResponse);
     }
 
     [HttpGet("listall")]
-    public IActionResult ListAll([FromQuery] string species ="", [FromQuery] string classification ="", [FromQuery] int pagesize = 10, [FromQuery] int pagenum = 1)
+    public IActionResult ListAll([FromQuery] string species ="", [FromQuery] string classification ="", string enclosure="", [FromQuery] int pagesize = 10, [FromQuery] int pagenum = 1)
     {     
-        
-        var filteredData = _zoo.Animals.Include(animal => animal.Species).Include(animal => animal.Enclosure).AsQueryable();
+        var animalsResponse = new AnimalsResponse();
+
+        var filteredData = _zoo.Animals
+                            .Include(animal => animal.Species)
+                            .Include(animal => animal.Enclosure)
+                            .AsQueryable();
         
         if (!string.IsNullOrEmpty(species))
         {
-            filteredData = filteredData.Where(animal => animal.Species.Name == species).AsQueryable();
+            filteredData = filteredData.Where(animal => animal.Species.Name.Trim() == species.Trim()).AsQueryable();
         }
 
         if (!string.IsNullOrEmpty(classification))
         {
             if(!Enum.TryParse<Classification>(classification,ignoreCase:true,out var intClassification))
             {
-                return Ok(new List<AnimalResponse>());
+                return Ok(animalsResponse.Animals); //return empty list
             }
             filteredData = filteredData.Where(animal => animal.Species.Classification == intClassification).AsQueryable();
         }
-        
-        if(filteredData == null)
-        {
-            return NotFound();
-        }
 
+        if (!string.IsNullOrEmpty(enclosure))
+        {
+            filteredData = filteredData.Where(animal => animal.Enclosure.Name.Trim() == enclosure.Trim()).AsQueryable();
+        }
+        
         filteredData = filteredData
                         .OrderBy(animal => animal.Name);
 
         var totalPages = (int)Math.Ceiling((double)filteredData.Count() / pagesize);  
 
-        if (pagenum >totalPages)
+        if (pagenum > totalPages)
         {
-            pagenum = totalPages;
+            pagenum = Math.Max(1,totalPages);
         }
 
         var pagedData = filteredData
                         .Skip((pagenum -1) * pagesize)
                         .Take(pagesize)
                         .ToList();            
-
-        var animalsResponse = new List<AnimalResponse>();
+     
         foreach(var animal in pagedData)
         {
             var animalResponse = new AnimalResponse()
@@ -108,7 +124,7 @@ public class AnimalsController: ControllerBase
                 DateOfBirth = animal.DateOfBirth,
                 DateOfAcquisition = animal.DateOfAcquisition, 
             };
-            animalsResponse.Add(animalResponse);
+            animalsResponse.Animals.Add(animalResponse);
         }
         return Ok(animalsResponse);
     }
@@ -118,12 +134,10 @@ public class AnimalsController: ControllerBase
     {
         if(_zoo.Species.Any(species => species.SpeciesId == createAnimalRequest.SpeciesId) && _zoo.Enclosures.Any(enclosure => enclosure.EnclosureId == createAnimalRequest.EnclosureId))
         {
-            Console.WriteLine("<----------Test--------->");
             var enclosure = _zoo.Enclosures.First(enclosure => enclosure.EnclosureId == createAnimalRequest.EnclosureId);
-            Console.WriteLine("<----------Found Enclosure--------->");
+            
             if(_zoo.Animals.Count(animal => animal.EnclosureId == enclosure.EnclosureId)+1 < enclosure.NumberOfAnimals)
             {
-                Console.WriteLine("creating new animal");
                 var newAnimal = _zoo.Animals.Add(new Animal
                 {
                     Name = createAnimalRequest.Name,
